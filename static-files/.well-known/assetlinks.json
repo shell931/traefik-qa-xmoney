@@ -1,0 +1,12 @@
+[
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.dyner24.dyner24",
+        "sha256_cert_fingerprints": [
+          "1d:73:60:67:ac:d3:41:7d:4c:5d:3c:28:5e:84:24:ef:ad:68:27:e5:20:fb:c7:6d:18:9c:75:a9:8b:57:92:49"
+        ]
+      }
+    }
+  ]

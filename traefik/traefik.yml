@@ -1,0 +1,19 @@
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+
+api:
+  dashboard: true
+
+providers:
+  docker:
+    exposedByDefault: false
+
+certificatesResolvers:
+  myresolver:
+    acme:
+      email: carlos.arriero931@example.com
+      storage: /acme.json
+      tlsChallenge: {}

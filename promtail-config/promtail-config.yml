@@ -1,0 +1,39 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+clients:
+  - url: http://18.211.202.24:3100/loki/api/v1/push
+
+positions:
+  filename: /tmp/positions.yaml
+
+scrape_configs:
+  - job_name: docker
+    pipeline_stages:
+      - docker: {}  # Analiza el JSON de los logs de Docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          container_name: ccp-api-gateway
+          __path__: /var/lib/docker/containers/*/*.log
+
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          container_name: ccp-movii-svc
+          __path__: /var/lib/docker/containers/otro-contenedor/*/*.log
+
+
+scrape_configs:
+  - job_name: laravel
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: laravel
+          log_type: application
+          __path__: /home/gateway/gateway/storage/logs/laravel.log

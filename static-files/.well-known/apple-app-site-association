@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "7X8JN48Z6N.com.dyner24.dyner24"
+        ],
+        "paths": [
+          "*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "7X8JN48Z6N.com.dyner24.dyner24"
+    ]
+  }
+}

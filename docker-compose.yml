@@ -1,0 +1,356 @@
+services:
+
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    command:
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=desarrolloartech@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - ccp
+    restart: unless-stopped
+
+  alfred:
+    image: carlos931/modified-ubuntu
+    container_name: alfred
+    volumes:
+      - /home/alfred/apachelog:/var/log/apache2
+      - /home/alfred:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      # Maneja el tráfico a la raíz del dominio
+      - "traefik.http.routers.alfred-root.rule=Host(`manufacturascontrol.info`, `www.manufacturascontrol.info`)"
+      - "traefik.http.routers.alfred-root.entrypoints=websecure"
+      - "traefik.http.routers.alfred-root.middlewares=alfred-redirect"
+      - "traefik.http.routers.alfred-root.tls.certresolver=myresolver"
+      # Maneja el tráfico hacia /alfred/
+      - "traefik.http.routers.alfred.rule=Host(`manufacturascontrol.info`, `www.manufacturascontrol.info`) && PathPrefix(`/alfred`)"
+      - "traefik.http.routers.alfred.entrypoints=websecure"
+      - "traefik.http.routers.alfred.tls.certresolver=myresolver"
+      # Middleware para redirigir tráfico de raíz a /alfred/
+      - "traefik.http.middlewares.alfred-redirect.redirectregex.regex=^https://(.*)/$$"
+      - "traefik.http.middlewares.alfred-redirect.redirectregex.replacement=https://$$1/alfred/"
+      - "traefik.http.middlewares.alfred-redirect.redirectregex.permanent=true"
+    networks:
+      - ccp
+    restart: unless-stopped    
+
+  messages:
+    image: carlos931/modified-ubuntu
+    container_name: messages
+    volumes:
+      - /home/messages/apachelog:/var/log/apache2
+      - /home/messages:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      # Maneja el tráfico a la raíz del dominio
+      - "traefik.http.routers.messages-root.rule=Host(`andromeda.credit`, `www.andromeda.credit`)"
+      - "traefik.http.routers.messages-root.entrypoints=websecure"
+      - "traefik.http.routers.messages-root.middlewares=messages-redirect"
+      - "traefik.http.routers.messages-root.tls.certresolver=myresolver"
+      # Maneja el tráfico hacia /messages/
+      - "traefik.http.routers.messages.rule=Host(`andromeda.credit`, `www.andromeda.credit`) && PathPrefix(`/messages`)"
+      - "traefik.http.routers.messages.entrypoints=websecure"
+      - "traefik.http.routers.messages.tls.certresolver=myresolver"
+      # Middleware para redirigir tráfico de raíz a /messages/
+      - "traefik.http.middlewares.messages-redirect.redirectregex.regex=^https://(.*)/$$"
+      - "traefik.http.middlewares.messages-redirect.redirectregex.replacement=https://$$1/messages/"
+      - "traefik.http.middlewares.messages-redirect.redirectregex.permanent=true"
+    networks:
+      - ccp
+    restart: unless-stopped
+
+  mideps:
+    image: carlos931/modified-ubuntu
+    container_name: mideps
+    volumes:
+      - /home/mideps/apachelog:/var/log/apache2
+      - /home/mideps:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      # Maneja el tráfico a la raíz del dominio
+      - "traefik.http.routers.mideps-root.rule=Host(`mideps.site`, `www.mideps.site`)"
+      - "traefik.http.routers.mideps-root.entrypoints=websecure"
+      - "traefik.http.routers.mideps-root.middlewares=mideps-redirect"
+      - "traefik.http.routers.mideps-root.tls.certresolver=myresolver"
+      # Maneja el tráfico hacia /mideps/
+      - "traefik.http.routers.mideps.rule=Host(`mideps.site`, `www.mideps.site`) && PathPrefix(`/mideps`)"
+      - "traefik.http.routers.mideps.entrypoints=websecure"
+      - "traefik.http.routers.mideps.tls.certresolver=myresolver"
+      # Middleware para redirigir tráfico de raíz a /mideps/
+      - "traefik.http.middlewares.mideps-redirect.redirectregex.regex=^https://(.*)/$$"
+      - "traefik.http.middlewares.mideps-redirect.redirectregex.replacement=https://$$1/mideps/"
+      - "traefik.http.middlewares.mideps-redirect.redirectregex.permanent=true"
+    networks:
+      - ccp
+    restart: unless-stopped
+
+  static-assets:
+    image: nginx:latest
+    container_name: static-assets
+    restart: always
+    volumes:
+      - ./static-files:/usr/share/nginx/html  # Carpeta con assetlinks.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.assetlinks.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && Path(`/.well-known/assetlinks.json`)"
+      - "traefik.http.routers.assetlinks.entrypoints=websecure"
+      - "traefik.http.routers.assetlinks.tls.certresolver=myresolver"
+      - "traefik.http.services.assetlinks.loadbalancer.server.port=80"
+    networks:
+      - ccp
+
+  static-assets-apple:
+    image: nginx:latest
+    container_name: static-assets-apple
+    restart: always
+    volumes:
+      - ./static-files:/usr/share/nginx/html  # Carpeta con assetlinks.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.apple.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && Path(`/.well-known/apple-app-site-association`)"
+      - "traefik.http.routers.apple.entrypoints=websecure"
+      - "traefik.http.routers.apple.tls.certresolver=myresolver"
+      - "traefik.http.services.apple.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.apple-headers.headers.customresponseheaders.Content-Type=application/json"
+      - "traefik.http.routers.apple.middlewares=apple-headers"
+    networks:
+      - ccp
+
+  angular-app:
+    image: nginx:latest
+    container_name: angular-app
+    restart: always
+    volumes:
+      - ./dist:/usr/share/nginx/html  # Archivos estáticos Angular
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Configuración personalizada de Nginx
+    labels:
+      # Habilita Traefik
+      - "traefik.enable=true"
+      # Maneja la redirección desde la raíz a /dyner
+      - "traefik.http.routers.angular-root.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`)"
+      - "traefik.http.routers.angular-root.entrypoints=websecure"
+      - "traefik.http.routers.angular-root.middlewares=angular-redirect"
+      - "traefik.http.routers.angular-root.tls.certresolver=myresolver"
+      # Middleware para redirigir tráfico de la raíz a /dyner
+      - "traefik.http.middlewares.angular-redirect.redirectregex.regex=^https://(.*)"
+      - "traefik.http.middlewares.angular-redirect.redirectregex.replacement=https://www.x-dev.cloud/dyner"
+      - "traefik.http.middlewares.angular-redirect.redirectregex.permanent=true"
+      # Maneja el tráfico directo hacia /dyner
+      - "traefik.http.routers.angular.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/dyner`)"
+      - "traefik.http.routers.angular.entrypoints=websecure"
+      - "traefik.http.routers.angular.tls.certresolver=myresolver"
+      - "traefik.http.services.angular.loadbalancer.server.port=80"  
+    networks:
+      - ccp
+
+  gateway:
+    image: carlos931/modified-ubuntu
+    container_name: gateway
+    volumes:
+      - /home/gateway/apachelog:/var/log/apache2
+      - /home/gateway:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/gateway`)"
+      - "traefik.http.routers.gateway.entrypoints=websecure"
+      - "traefik.http.routers.gateway.tls.certresolver=myresolver"
+    networks:
+      - ccp
+    restart: unless-stopped
+
+  api-mobile:
+    image: carlos931/modified-ubuntu
+    container_name: api-mobile
+    volumes:
+      - /home/api-mobile/apachelog:/var/log/apache2
+      - /home/api-mobile:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api_mobile.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/api-mobile`)"
+      - "traefik.http.routers.api_mobile.entrypoints=websecure"
+      - "traefik.http.routers.api_mobile.tls.certresolver=myresolver"
+    networks:
+      - ccp
+    restart: unless-stopped
+
+  backoffice:
+    image: carlos931/modified-ubuntu
+    container_name: backoffice
+    volumes:
+      - /home/backoffice/apachelog:/var/log/apache2
+      - /home/backoffice:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backoffice.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/backoffice`)"
+      - "traefik.http.routers.backoffice.entrypoints=websecure"
+      - "traefik.http.routers.backoffice.tls.certresolver=myresolver"
+    networks:
+      - ccp
+    restart: unless-stopped
+
+  ccp-auth-svc:
+    build:
+      context: /home/cpp/ccp-auth-svc  
+      dockerfile: Dockerfile   
+    restart: unless-stopped
+    container_name: ccp-auth-svc
+    volumes:
+      - /home/cpp/ccp-auth-svc:/app
+    ports:
+      - 50052:50052
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/ccp-auth-svc/.env
+    networks:
+      - ccp
+
+  ccp-api-gateway:
+    build:
+      context: /home/cpp/ccp-api-gateway
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    container_name: ccp-api-gateway
+    volumes:
+      - /home/cpp/ccp-api-gateway/src:/ccp-api-gateway/code/src
+    ports:
+      - 6000:6000
+    environment:
+      MI_ENV_VARIABLE: "example"
+      MOVII_SERVICE_HOST: "ccp-movii-svc:50051"
+      AUTH_SERVICE_HOST: "ccp-auth-svc:50052"
+      CREDIT_SERVICE_HOST: "ccp-credit-svc:50053"
+      DEBIT_SERVICE_HOST: "ccp-debit-svc:50054"
+      BACK_DYNAMIC_FORMS_SERVICE_HOST: "back-dynamic-forms:50055"
+      DYNER_PROCESSOR_SERVICE_HOST: "ccp-dyner-processor-svc:50056"
+      PAGATODO_SERVICE_HOST: "ccp-pagatodo-svc:50060"
+      ADMIN_MAILS_SERVICE_HOST: "admin-mails-svc:50057"
+      EXCHANGE_RATES_SERVICE_HOST: "exchange-rates-svc:50059"
+      VISA_SERVICE_HOST: "ccp-visa-svc:50075"
+    env_file:
+      - /home/cpp/ccp-api-gateway/.env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ccp-api.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/ccp`)"
+      - "traefik.http.routers.ccp-api.entrypoints=websecure"
+      - "traefik.http.routers.ccp-api.tls.certresolver=myresolver"
+    networks:
+      - ccp
+
+  ccp-movii-svc:
+    build:
+      context: /home/cpp/ccp-movii-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: ccp-movii-svc
+    volumes:
+      - /home/cpp/ccp-movii-svc/src:/ccp-movii-svc/code/src
+    ports:
+      - 50051:50051
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/ccp-movii-svc/.env
+    networks:
+      - ccp
+
+  ccp-visa-svc:
+    build:
+      context: /home/cpp/ccp-visa-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: ccp-visa-svc
+    volumes:
+      - /home/cpp/ccp-visa-svc/src:/ccp-visa-svc/code/src
+    ports:
+      - 50075:50075
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/ccp-visa-svc/.env
+    networks:
+      - ccp      
+
+  admin-mails-svc:
+    build:
+      context: /home/cpp/admin-mails-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: admin-mails-svc
+    volumes:
+      - /home/cpp/admin-mails-svc/src:/admin-mails-svc/code/src
+    ports:
+      - 50057:50057
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/admin-mails-svc/.env
+    networks:
+      - ccp  
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config:/etc/loki
+      - ./loki-data:/data/loki
+      - ./data/loki:/tmp/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - ccp
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config:/etc/promtail
+      - /home/gateway/gateway/storage/logs:/home/gateway/gateway/storage/logs:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    networks:
+      - ccp
+
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/monitoring`)"
+      #- "traefik.http.routers.grafana.rule=Host(`monitoring.x-dev.cloud`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+    restart: unless-stopped
+    networks:
+      - ccp
+
+volumes:
+  grafana-data:
+
+networks:
+  ccp:
+    driver: bridge
