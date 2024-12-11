@@ -24,31 +24,6 @@ services:
       - ccp
     restart: unless-stopped
 
-  alfred:
-    image: carlos931/modified-ubuntu
-    container_name: alfred
-    volumes:
-      - /home/alfred/apachelog:/var/log/apache2
-      - /home/alfred:/var/www/html
-    labels:
-      - "traefik.enable=true"
-      # Maneja el tráfico a la raíz del dominio
-      - "traefik.http.routers.alfred-root.rule=Host(`manufacturascontrol.info`, `www.manufacturascontrol.info`)"
-      - "traefik.http.routers.alfred-root.entrypoints=websecure"
-      - "traefik.http.routers.alfred-root.middlewares=alfred-redirect"
-      - "traefik.http.routers.alfred-root.tls.certresolver=myresolver"
-      # Maneja el tráfico hacia /alfred/
-      - "traefik.http.routers.alfred.rule=Host(`manufacturascontrol.info`, `www.manufacturascontrol.info`) && PathPrefix(`/alfred`)"
-      - "traefik.http.routers.alfred.entrypoints=websecure"
-      - "traefik.http.routers.alfred.tls.certresolver=myresolver"
-      # Middleware para redirigir tráfico de raíz a /alfred/
-      - "traefik.http.middlewares.alfred-redirect.redirectregex.regex=^https://(.*)/$$"
-      - "traefik.http.middlewares.alfred-redirect.redirectregex.replacement=https://$$1/alfred/"
-      - "traefik.http.middlewares.alfred-redirect.redirectregex.permanent=true"
-    networks:
-      - ccp
-    restart: unless-stopped    
-
   messages:
     image: carlos931/modified-ubuntu
     container_name: messages
@@ -73,6 +48,7 @@ services:
     networks:
       - ccp
     restart: unless-stopped
+
 
   mideps:
     image: carlos931/modified-ubuntu
@@ -158,6 +134,22 @@ services:
     networks:
       - ccp
 
+
+  backoffice:
+    image: carlos931/modified-ubuntu
+    container_name: backoffice
+    volumes:
+      - /home/backoffice/apachelog:/var/log/apache2
+      - /home/backoffice:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backoffice.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/backoffice`)"
+      - "traefik.http.routers.backoffice.entrypoints=websecure"
+      - "traefik.http.routers.backoffice.tls.certresolver=myresolver"
+    networks:
+      - ccp
+    restart: unless-stopped
+
   gateway:
     image: carlos931/modified-ubuntu
     container_name: gateway
@@ -188,21 +180,6 @@ services:
       - ccp
     restart: unless-stopped
 
-  backoffice:
-    image: carlos931/modified-ubuntu
-    container_name: backoffice
-    volumes:
-      - /home/backoffice/apachelog:/var/log/apache2
-      - /home/backoffice:/var/www/html
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backoffice.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/backoffice`)"
-      - "traefik.http.routers.backoffice.entrypoints=websecure"
-      - "traefik.http.routers.backoffice.tls.certresolver=myresolver"
-    networks:
-      - ccp
-    restart: unless-stopped
-
   ccp-auth-svc:
     build:
       context: /home/cpp/ccp-auth-svc  
@@ -219,7 +196,6 @@ services:
       - /home/cpp/ccp-auth-svc/.env
     networks:
       - ccp
-
   ccp-api-gateway:
     build:
       context: /home/cpp/ccp-api-gateway
@@ -303,51 +279,7 @@ services:
     networks:
       - ccp  
 
-  loki:
-    image: grafana/loki:2.9.0
-    container_name: loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki-config:/etc/loki
-      - ./loki-data:/data/loki
-      - ./data/loki:/tmp/loki
-    command: -config.file=/etc/loki/loki-config.yml
-    networks:
-      - ccp
-
-  promtail:
-    image: grafana/promtail:2.9.0
-    container_name: promtail
-    volumes:
-      - /var/log:/var/log
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./promtail-config:/etc/promtail
-      - /home/gateway/gateway/storage/logs:/home/gateway/gateway/storage/logs:ro
-    command: -config.file=/etc/promtail/promtail-config.yml
-    networks:
-      - ccp
-
-  grafana:
-    image: grafana/grafana:10.0.0
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`x-dev.cloud`, `www.x-dev.cloud`) && PathPrefix(`/monitoring`)"
-      #- "traefik.http.routers.grafana.rule=Host(`monitoring.x-dev.cloud`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
-    restart: unless-stopped
-    networks:
-      - ccp
-
+  
 volumes:
   grafana-data:
 
