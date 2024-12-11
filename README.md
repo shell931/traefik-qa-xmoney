@@ -3,6 +3,7 @@
 Service to __SERVICE_SUMMARY__.
 
 ## SETUP
+```bash
 
 traefik/
 └── dist/
@@ -14,6 +15,12 @@ traefik/
     └── nginx.conf
 └── static-files/
     └── .well-known
+
+
+echo "{}" > /home/traefik/letsencrypt/acme.json
+chmod 600 /home/traefik/letsencrypt/acme.json
+
+```
 
 ### INSTALL
 
