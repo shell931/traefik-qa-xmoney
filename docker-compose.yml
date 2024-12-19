@@ -278,7 +278,45 @@ services:
       - /home/cpp/admin-mails-svc/.env
     networks:
       - ccp  
+  ccp-pagatodo-svc:
+    build:
+      context: /home/cpp/ccp-pagatodo-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: ccp-pagatodo-svc
+    volumes:
+      - /home/cpp/ccp-pagatodo-svc/src:/ccp-pagatodo-svc/code/src
+    ports:
+      - 50060:50060
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/ccp-pagatodo-svc/.env
+    networks:
+      - ccp
 
+  django_app:
+    build: /home/dyner-ach-services/dyner-ach-services/.
+    volumes:
+      - /home/dyner-ach-services/dyner-ach-services/static:/code/static
+      - /home/dyner-ach-services/dyner-ach-services/.:/code
+      - /Users/dyner-ach-services:/var/log
+    networks:
+      - ccp
+    restart: always
+
+  nginx:
+    image: nginx:1.13
+    ports:
+      - 8000:80
+    volumes:
+      - /home/dyner-ach-services/dyner-ach-services/config/nginx/conf.d:/etc/nginx/conf.d
+      - /home/dyner-ach-services/dyner-ach-services/static:/code/static
+    depends_on:
+      - django_app
+    networks:
+      - ccp
+    restart: always
   
 volumes:
   grafana-data:
