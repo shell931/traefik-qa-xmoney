@@ -295,6 +295,23 @@ services:
     networks:
       - ccp
 
+  exchange-rates-svc:
+    build:
+      context: /home/cpp/exchange-rates-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: exchange-rates-svc
+    volumes:
+      - /home/cpp/exchange-rates-svc/src:/exchange-rates-svc/code/src
+    ports:
+      - 50059:50059
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/exchange-rates-svc/.env
+    networks:
+      - ccp
+
   django_app:
     build: /home/dyner-ach-services/dyner-ach-services/.
     volumes:
