@@ -312,6 +312,23 @@ services:
     networks:
       - ccp
 
+  ccp-credit-svc:
+    build:
+      context: /home/cpp/ccp-credit-svc
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: ccp-credit-svc
+    volumes:
+      - /home/cpp/ccp-credit-svc/src:/ccp-credit-svc/code/src
+    ports:
+      - 50053:50053
+    environment:
+      MI_ENV_VARIABLE: "example"
+    env_file:
+      - /home/cpp/ccp-credit-svc/.env
+    networks:
+      - ccp
+
   django_app:
     build: /home/dyner-ach-services/dyner-ach-services/.
     volumes:
