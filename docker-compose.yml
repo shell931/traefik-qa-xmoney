@@ -180,6 +180,20 @@ services:
       - ccp
     restart: unless-stopped
 
+  coretransaction:
+    image: carlos931/apachephp73
+    container_name: coretransaction
+    volumes:
+      - /home/coretransaction/apachelog:/var/log/apache2
+      - /home/coretransaction:/var/www/html
+    ports:
+      - "1200:80"
+    stdin_open: true # Equivale a la opción -it
+    tty: true        # Necesario para mantener el contenedor abierto
+    networks:
+      - ccp
+    restart: unless-stopped
+
   ccp-auth-svc:
     build:
       context: /home/cpp/ccp-auth-svc  
